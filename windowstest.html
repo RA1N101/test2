@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RA1N OS</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center; /* Center content vertically */
+            height: 100vh;
+            background-image: url('bg.png');
+        }
+
+        .container {
+            flex: 1; /* Allow the container to take up available space */
+        }
+
+        .floating-taskbar {
+            display: flex;
+            flex-direction: column;
+            background-color: #ffffff;
+            border-radius: 15px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            margin-left: auto; /* Push the taskbar to the right */
+            margin-right: 15px; /* Adjust this property to move the taskbar to the left */
+        }
+
+        .taskbar-item {
+            padding: 15px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .taskbar-item:hover {
+            background-color: #e0e0e0;
+        }
+
+        .floating-taskbar {
+            /* Add this line for dark mode */
+            background-color: #333; /* Dark background color */
+            color: #fff; /* Light text color */
+        }
+
+        .fake-window {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px; /* Adjust the initial width as needed */
+            height: 200px; /* Adjust the initial height as needed */
+            background-color: #fff;
+            border: 1px solid #000;
+            padding: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            cursor: move; /* Make the window draggable */
+            overflow: hidden; /* Hide content overflow */
+        }
+
+        .resize-handle {
+            width: 10px;
+            height: 10px;
+            background-color: #333;
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            cursor: se-resize; /* Resize cursor for the handle */
+        }
+
+        .window-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #ddd; /* Header background color */
+            padding: 5px;
+            cursor: move; /* Allow dragging from the header */
+        }
+
+        .window-buttons {
+            display: flex;
+        }
+
+        .window-button {
+            margin-right: 5px;
+            cursor: pointer;
+        }
+
+        .window-content {
+            overflow: auto; /* Enable scrolling for content overflow */
+            height: calc(100% - 30px); /* Adjust height to leave space for header */
+        }
+    </style>
+
+    <style>
+        /* button icon css */
+        .icon-button {
+            background: none; /* Set background to none for transparency */
+            border: none;
+            padding: 10px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            cursor: pointer;
+        }
+
+        /* Adjust the width and height based on your icon dimensions */
+        .icon-button img {
+            width: 30px;
+            height: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container"></div>
+    <div class="floating-taskbar">
+        <button class="icon-button"><img src="icon.png" alt="Icon" onclick="openFakeWindow('Incog Browser')" title="Incog Browser"></button>
+        <button class="icon-button"><img src="game.png" alt="Icon" onclick="openFakeWindow('Games')" title="Games"></button>
+        <button class="icon-button"><img src="yvd.png" alt="Icon" onclick="openFakeWindow('YVD')" title="Youtube Video Downloader"></button>
+        <button class="icon-button"><img src="LS.png" alt="Icon" onclick="openFakeWindow('LS')" title="Link Shortener"></button>
+        <button class="icon-button"><img src="note.png" alt="icon" onclick="openFakeWindow('READ')" title="READ THIS"></button>
+        <!-- Add more taskbar items as needed -->
+    </div>
+
+    <!-- Fake Window -->
+    <div class="fake-window" id="fakeWindow" onmousedown="startDrag(event)">
+        <div class="window-header">
+            <span id="appName">Incog Browser</span>
+            <div class="window-buttons">
+                <div class="window-button" onclick="minimizeFakeWindow()">-</div>
+                <div class="window-button" onclick="maximizeFakeWindow()">□</div>
+                <div class="window-button" onclick="closeFakeWindow()">✖</div>
+            </div>
+        </div>
+        <div class="resize-handle" onmousedown="startResize(event)"></div>
+        <div class="window-content" id="fakeContent">
+            <!-- Content goes here -->
+            <h2 id="appContent">Incog Browser Content</h2>
+        </div>
+    </div>
+
+    <script>
+        var isDragging = false;
+        var isResizing = false;
+        var isMaximized = false;
+        var originalWidth, originalHeight;
+        var offsetX, offsetY;
+        var fakeWindow = document.getElementById('fakeWindow');
+        var appNameElement = document.getElementById('appName');
+        var appContentElement = document.getElementById('appContent');
+
+        function startDrag(e) {
+            isDragging = true;
+            offsetX = e.clientX - parseFloat(window.getComputedStyle(fakeWindow).left);
+            offsetY = e.clientY - parseFloat(window.getComputedStyle(fakeWindow).top);
+            document.addEventListener('mousemove', dragWindow);
+            document.addEventListener('mouseup', stopDrag);
+        }
+
+        function startResize(e) {
+            isResizing = true;
+            offsetX = e.clientX - parseFloat(window.getComputedStyle(fakeWindow).width);
+            offsetY = e.clientY - parseFloat(window.getComputedStyle(fakeWindow).height);
+            document.addEventListener('mousemove', resizeWindow);
+            document.addEventListener('mouseup', stopResize);
+        }
+
+        function dragWindow(e) {
+            if (isDragging && !isResizing && !isMaximized) {
+                fakeWindow.style.left = e.clientX - offsetX + 'px';
+                fakeWindow.style.top = e.clientY - offsetY + 'px';
+            }
+        }
+
+        function stopDrag() {
+            isDragging = false;
+            document.removeEventListener('mousemove', dragWindow);
+            document.removeEventListener('mouseup', stopDrag);
+        }
+
+        function resizeWindow(e) {
+            if (isResizing) {
+                fakeWindow.style.width = e.clientX - offsetX + 'px';
+                fakeWindow.style.height = e.clientY - offsetY + 'px';
+            }
+        }
+
+        function stopResize() {
+            isResizing = false;
+            document.removeEventListener('mousemove', resizeWindow);
+            document.removeEventListener('mouseup', stopResize);
+        }
+
+        function openFakeWindow(appName) {
+            appNameElement.innerText = appName;
+
+            // Set the content for the fake window based on the app
+            if (appName === 'Incog Browser') {
+                appContentElement.innerHTML = '<iframe src="https://test-ra1n.koyeb.app/" width="100%" height="650"></iframe>';
+            } else if (appName === 'Games') {
+                appContentElement.innerHTML = '<iframe src="https://tbg95.github.io/" width="100%" height="650"></iframe>' +
+                                              '<iframe src="https://ad-freegames.github.io/" width="100%" height="650"></iframe>' +
+                                              '<iframe src="https://play2online.com/" width="100%" height="650"></iframe>' +
+                                              '<iframe src="https://neal.fun/" width="100%" height="650"></iframe>' + 
+                                              '<iframe src="https://jordansmathwork.netlify.app/" width="100%" height="650"></iframe>';
+            } else if (appName === 'YVD') {
+                appContentElement.innerHTML = '<iframe src="https://yt1s.com/" width="100%" height="650"></iframe>';
+            } else if (appName === 'LS') {
+                appContentElement.innerHTML = '<iframe src="https://rb.gy" width="100%" height="650"></iframe>';
+            } else if (appName === 'READ') {
+                appContentElement.innerHTML = '<p>In order to play fortnite, open https://rb.gy/hc9bwn and press enter<p>';
+            }
+
+            // Show the fake window
+            fakeWindow.style.display = 'block';
+
+            // Restore size if maximized
+            if (isMaximized) {
+                fakeWindow.style.width = originalWidth + 'px';
+                fakeWindow.style.height = originalHeight + 'px';
+                isMaximized = false;
+            }
+        }
+
+        function closeFakeWindow() {
+            // Hide the fake window
+            fakeWindow.style.display = 'none';
+        }
+
+        function minimizeFakeWindow() {
+            // Minimize the fake window (you can customize this)
+            fakeWindow.style.display = 'none';
+        }
+
+        function maximizeFakeWindow() {
+            if (!isMaximized) {
+                // Maximize the fake window
+                originalWidth = parseFloat(window.getComputedStyle(fakeWindow).width);
+                originalHeight = parseFloat(window.getComputedStyle(fakeWindow).height);
+
+                fakeWindow.style.width = '100%';
+                fakeWindow.style.height = '100%';
+                isMaximized = true;
+            } else {
+                // Restore the size
+                fakeWindow.style.width = originalWidth + 'px';
+                fakeWindow.style.height = originalHeight + 'px';
+                isMaximized = false;
+            }
+        }
+    </script>
+</body>
+</html>
